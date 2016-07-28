@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %} - Party{% endblock %}
+
+{% block main %}
+{% for pokemon in pokemons %}
+  <li>{{ pokemon.pokemon_id }} - <a href="/{{ user }}/pokemons/party/{{ pokemon.id }}">{{ pokemon.name }}</a></li>
+{% endfor %}	
+{% endblock %}

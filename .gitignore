@@ -1,4 +1,4 @@
 dumps
 *.pyc
 venv
-.env
+env

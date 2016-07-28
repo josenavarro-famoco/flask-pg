@@ -280,8 +280,20 @@ def pokemons_nearby_detail(user, index_pokemon):
     
     return jsonify({ 'data': parseWildPokemon(list_pokemons[index]) })
 
-@app.route(API_PATH + "/<user>/pokemons/party")
+@app.route(BASE_PATH + "/<user>/pokemons/party")
 def pokemon_party(user):
+    inventory = sessions[user].checkInventory()
+
+    list_pokemons = []
+    for pokemon in inventory.party:
+        list_pokemons.append(parsePartyPokemon(pokemon))
+
+    sorted_list = sorted(list_pokemons, key=lambda pokemon: pokemon['pokemon_id'])
+
+    return render_template('pokemons_party.html', user=user, pokemons=sorted_list)
+
+@app.route(API_PATH + "/<user>/pokemons/party")
+def api_pokemon_party(user):
     inventory = sessions[user].checkInventory()
 
     if len(inventory.party) == 0:
