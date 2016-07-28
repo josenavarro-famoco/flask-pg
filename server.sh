@@ -1,0 +1,1 @@
+gunicorn -w 4 ext_api:app -b :5000 --chdir ./pogo
