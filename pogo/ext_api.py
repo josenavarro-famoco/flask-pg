@@ -315,7 +315,7 @@ def pokemon_party_detail(user, pokemon_id):
 
     for pokemon in inventory.party:
         if pokemon_id == getattr(pokemon, 'id', None):
-            return jsonify({ 'data': parsePartyPokemon(pokemon) })
+            return jsonify({ 'data': parsePartyPokemon(pokemon, detail=True) })
 
     return jsonify({ 'data': {} })
 
