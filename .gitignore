@@ -1,0 +1,4 @@
+dumps
+*.pyc
+venv
+.env
