@@ -169,6 +169,11 @@ def home():
     """Render website's home page."""
     return render_template('home.html')
 
+@app.route(API_PATH + "/")
+def index():
+    """Render website's home page."""
+    return str(users)
+
 @app.route(BASE_PATH + "/login/<auth_type>/<user>/<password>")
 def login(auth_type, user, password):
     """
@@ -211,11 +216,17 @@ def login(auth_type, user, password):
         global users
         sessions[user] = session
         users.append(user)
-
+        logging.info(users)
     return str(session)
 
 @app.route(API_PATH + "/<user>/profile")
 def profile(user):
+    profile = parseProfile(sessions[user].getProfile())
+    return render_template('profile.html', profile=profile)
+
+
+@app.route(API_PATH + "/<user>/profile")
+def api_profile(user):
     return jsonify({ 'data': parseProfile(sessions[user].getProfile()) })
 
 @app.route(API_PATH + "/<user>/items")

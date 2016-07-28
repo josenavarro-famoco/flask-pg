@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %} - profile{% endblock %}
+
+{% block main %}
+<h1>{{ profile.username }}</h1>
+<p>TEAM: {{ profile.team }}</p>
+<p>Pokecoins: {{ profile.pokecoins }}</p>
+<p>Stardust: {{ profile.stardust }}</p>
+{% endblock %}
