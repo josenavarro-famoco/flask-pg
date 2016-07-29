@@ -7,13 +7,9 @@ from custom_exceptions import GeneralPogoException
 
 from api import PokeAuthSession
 from location import Location
-#import redis
 
 from pokedex import pokedex
 from inventory import items
-from util import sendLog
-
-#db = redis.StrictRedis(host='172.17.0.4', port=6379, db=0)
 
 def setupLogger():
     logger = logging.getLogger()
@@ -31,7 +27,6 @@ def getProfile(session):
         logging.info("Printing Profile:")
         profile = session.getProfile()
         logging.info(profile)
-        # sendLog('PROFILE', profile.team, profile.pokecoin, profile.stardust)
 
 
 def setNickname(session):
@@ -51,7 +46,7 @@ def findBestPokemon(session):
     latitude, longitude, _ = session.getCoordinates()
     logging.info("Current pos: %f, %f" % (latitude, longitude))
     for cell in cells.map_cells:
-        pokemons = [p for p in cell.wild_pokemons]
+        pokemons = [p for p in cell.wild_pokemons] + [p for p in cell.catchable_pokemons]
         # listPokemons += pokemons
         for pokemon in pokemons:
             listPokemons.append(pokemon)
@@ -67,8 +62,7 @@ def findBestPokemon(session):
                 pokemon.latitude,
                 pokemon.longitude
             )
-            sendLog("ENCOUNTER", pokedex[pokemonId] , pokemon.latitude , pokemon.longitude )
-            # Log the pokemon found
+
             logging.info("%s, %f meters away" % (
                 pokedex[pokemonId],
                 dist
@@ -208,8 +202,6 @@ def walkAndSpin(session, fort):
         details = session.getFortDetails(fort)
         logging.info("Spinning the Fort \"%s\":" % details.name)
 
-        sendLog("POKESTOP", details.name , fort.latitude , fort.longitude )
-        # Walk over
         session.walkTo(fort.latitude, fort.longitude, step=3.2)
         # Give it a spin
         fortResponse = session.getFortSearch(fort)
@@ -221,106 +213,44 @@ def walkAndSpinMany(session, forts):
     for fort in forts:
         walkAndSpin(session, fort)
 
+def setEggtoIncubator(session):
+    """
+    egg free:
+    id: 4555645718830338274
+    is_egg: true
+    egg_km_walked_target: 5.0
+    captured_cell_id: 5171192829494427648
+    creation_time_ms: 1469698248933
 
-# A very brute force approach to evolving
-def evolveAllPokemon(session):
+    egg ocup:
+    id: 4555645718830338274
+    is_egg: true
+    egg_km_walked_target: 5.0
+    captured_cell_id: 5171192829494427648
+    egg_incubator_id: "EggIncubatorProto4824214944684084552"
+    creation_time_ms: 1469698248933
+
+    empty:
+    id: "EggIncubatorProto4824214944684084552"
+    item_id: ITEM_INCUBATOR_BASIC_UNLIMITED
+    incubator_type: INCUBATOR_DISTANCE
+
+    full:
+    id: "EggIncubatorProto4824214944684084552"
+    item_id: ITEM_INCUBATOR_BASIC_UNLIMITED
+    incubator_type: INCUBATOR_DISTANCE
+    pokemon_id: 8929306760488893465
+    start_km_walked: 158.82093811
+    target_km_walked: 163.82093811
+    """
     inventory = session.checkInventory()
-    for pokemon in inventory.party:
-        logging.info(session.evolvePokemon(pokemon))
-        time.sleep(1)
-
-
-# You probably don't want to run this
-def releaseAllPokemon(session):
-    inventory = session.checkInventory()
-    for pokemon in inventory.party:
-        session.releasePokemon(pokemon)
-        time.sleep(1)
-
-
-# Just incase you didn't want any revives
-def tossRevives(session):
-    bag = session.checkInventory().bag
-    return session.recycleItem(items.REVIVE, bag[items.REVIVE])
-
-
-# Set an egg to an incubator
-def setEgg(session):
-    inventory = session.checkInventory()
-
-    # If no eggs, nothing we can do
-    if len(inventory.eggs) == 0:
-        return None
-
-    egg = inventory.eggs[0]
-    incubator = inventory.incubators[0]
-    return session.setEgg(incubator, egg)
-
-
-# Understand this function before you run it.
-# Otherwise you may flush pokemon you wanted.
-def cleanPokemon(session, thresholdCP=50):
-    logging.info("Cleaning out Pokemon...")
-    party = session.checkInventory().party
-    evolables = [pokedex.PIDGEY, pokedex.RATTATA, pokedex.ZUBAT]
-    toEvolve = {evolve: [] for evolve in evolables}
-    for pokemon in party:
-        # If low cp, throw away
-        if pokemon.cp < thresholdCP:
-            # It makes more sense to evolve some,
-            # than throw away
-            if pokemon.pokemon_id in evolables:
-                toEvolve[pokemon.pokemon_id].append(pokemon)
-                continue
-
-            # Get rid of low CP, low evolve value
-            logging.info("Releasing %s" % pokedex[pokemon.pokemon_id])
-            session.releasePokemon(pokemon)
-
-    # Evolve those we want
-    for evolve in evolables:
-        candies = session.checkInventory().candies[evolve]
-        pokemons = toEvolve[evolve]
-        # release for optimal candies
-        while candies // pokedex.evolves[evolve] < len(pokemons):
-            pokemon = pokemons.pop()
-            logging.info("Releasing %s" % pokedex[pokemon.pokemon_id])
-            session.releasePokemon(pokemon)
-            time.sleep(1)
-            candies += 1
-
-        # evolve remainder
-        for pokemon in pokemons:
-            logging.info("Evolving %s" % pokedex[pokemon.pokemon_id])
-            logging.info(session.evolvePokemon(pokemon))
-            time.sleep(1)
-            session.releasePokemon(pokemon)
-            time.sleep(1)
-
-
-def cleanInventory(session):
-    logging.info("Cleaning out Inventory...")
-    bag = session.checkInventory().bag
-
-    # Clear out all of a crtain type
-    tossable = [items.POTION]
-    for toss in tossable:
-        if toss in bag and bag[toss]:
-            session.recycleItem(toss, bag[toss])
-
-    # Limit a certain type
-    limited = {
-        items.POKE_BALL: 50,
-        items.GREAT_BALL: 100,
-        items.ULTRA_BALL: 150,
-        items.RAZZ_BERRY: 25,
-        items.SUPER_POTION: 25,
-        items.REVIVE: 18
-    }
-    for limit in limited:
-        if limit in bag and bag[limit] > limited[limit]:
-            session.recycleItem(limit, bag[limit] - limited[limit])
-
+    eggs = inventory.eggs
+    incubators = session.getInventory().incubators
+    for incubator in incubators:
+        if getattr(incubator, "pokemon_id", None) != None:
+            for egg in eggs:
+                if getattr(egg, "egg_incubator_id", None) == None:
+                    logging.info(session.setEgg(incubator, egg))
 
 # Basic bot
 def simpleBot(session):
@@ -332,8 +262,7 @@ def simpleBot(session):
     # Run the bot
     while True:
         forts = sortCloseForts(session)
-        #cleanPokemon(session, thresholdCP=300)
-        #cleanInventory(session)
+        setEggtoIncubator(session)
         try:
             logging.info( '----------------------------------------- FORTS: ' + str(len(forts)))
             for fort in forts:
@@ -390,38 +319,13 @@ if __name__ == '__main__':
         geo_key=args.geo_key
     )
 
-    # Authenticate with a given location
-    # Location is not inherent in authentication
-    # But is important to session
     if args.location:
         session = poko_session.authenticate(locationLookup=args.location)
     else:
         session = poko_session.authenticate()
 
-    #db.set('session', session)
-
-    #db.set('username', args.username)
-    #db.set('password', args.password)
-    #db.set('auth', args.auth)
-    #session2 = db.get('session')
-    # Time to show off what we can do
     if session:
-    #if session:
-        # General
-        #getProfile(session)
-        #getInventory(session)
-
-        # Things we need GPS for
         if args.location:
-            # Pokemon related
-            # pokemon = findBestPokemon(session)
-            # walkAndCatch(session, pokemon)
-            #
-            # # Pokestop related
-            # fort = findClosestFort(session)
-            # walkAndSpin(session, fort)
-
-        # see simpleBot() for logical usecases
             simpleBot(session)
 
     else:

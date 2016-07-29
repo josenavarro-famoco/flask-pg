@@ -174,8 +174,8 @@ def index():
     """Render website's home page."""
     return str(users)
 
-@app.route(BASE_PATH + "/login/<auth_type>/<user>/<password>")
-def login(auth_type, user, password):
+@app.route(BASE_PATH + "/login/<auth_type>/<user>/<password>/<location>")
+def login(auth_type, user, password, location):
     """
     Access Token: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5NzAyMjQ0YWE3YjMyYT
         BjZjM4MWNjNjVhZDk4OGYyMzllYmIzOWYifQ.eyJpc3MiOiJhY2NvdW50cy5
@@ -209,7 +209,7 @@ def login(auth_type, user, password):
         geo_key=None
     )
 
-    session = poko_session.authenticate(locationLookup='Brussels')
+    session = poko_session.authenticate(locationLookup=location)
 
     if session:
         global sessions

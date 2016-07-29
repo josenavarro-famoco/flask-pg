@@ -118,9 +118,9 @@ class Inventory(object):
         # for pokemon in self.party:
         #     s += "\n\t{0}".format(str(pokemon).replace("\n", "\n\t"))
 
-        # s += "\n-- Eggs:"
-        # for egg in self.eggs:
-        #     s += "\n\t{0}".format(str(egg).replace("\n", "\n\t"))
+        s += "\n-- Eggs:"
+        for egg in self.eggs:
+            s += "\n\t{0}".format(str(egg).replace("\n", "\n\t"))
 
         s += "\n-- Bag:"
         for key in self.bag:

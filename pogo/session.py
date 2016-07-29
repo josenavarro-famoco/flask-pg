@@ -70,7 +70,7 @@ class PogoSession(object):
     def setCoordinates(self, latitude, longitude):
         self.location.setCoordinates(latitude, longitude)
         #sendLog('', ' SET: lat->' + str(latitude) + ' long-> ' + str(longitude))
-        self.getMapObjects(radius=1)
+        self.getMapObjects(radius=10)
 
     def getCoordinates(self):
         return self.location.getCoordinates()
