@@ -1,1 +1,1 @@
-web: gunicorn ext_api:app --chdir ./pogo
+web: gunicorn --chdir pogo ext_api:app
