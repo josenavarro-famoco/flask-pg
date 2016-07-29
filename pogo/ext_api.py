@@ -1,5 +1,5 @@
 import logging
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 
 from custom_exceptions import GeneralPogoException
 
@@ -294,14 +294,20 @@ def pokemon_party(user):
 
 @app.route(API_PATH + "/<user>/pokemons/party")
 def api_pokemon_party(user):
+    cp = int(request.args.get('cp', 0))
     inventory = sessions[user].checkInventory()
 
-    if len(inventory.party) == 0:
-        return "no pokemons in party"
-
+    #app.logger.info('CP ' + str(cp))
+    
     list_pokemons = []
     for pokemon in inventory.party:
-        list_pokemons.append(parsePartyPokemon(pokemon))
+        parsed_pokemon = parsePartyPokemon(pokemon)
+        if cp > 0:
+            #app.logger.info('Pokemon CP ' + str(parsed_pokemon['cp']) + str(parsed_pokemon['cp'] < cp))
+            if parsed_pokemon['cp'] < cp:
+                list_pokemons.append(parsed_pokemon)
+        else:
+            list_pokemons.append(parsed_pokemon)
 
     sorted_list = sorted(list_pokemons, key=lambda pokemon: pokemon['pokemon_id'])
 

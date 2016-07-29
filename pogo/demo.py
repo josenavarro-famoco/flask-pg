@@ -46,7 +46,8 @@ def findBestPokemon(session):
     latitude, longitude, _ = session.getCoordinates()
     logging.info("Current pos: %f, %f" % (latitude, longitude))
     for cell in cells.map_cells:
-        pokemons = [p for p in cell.wild_pokemons] + [p for p in cell.catchable_pokemons]
+        #pokemons = [p for p in cell.wild_pokemons] + [p for p in cell.catchable_pokemons]
+        pokemons = [p for p in cell.wild_pokemons] 
         # listPokemons += pokemons
         for pokemon in pokemons:
             listPokemons.append(pokemon)
@@ -243,14 +244,18 @@ def setEggtoIncubator(session):
     start_km_walked: 158.82093811
     target_km_walked: 163.82093811
     """
-    inventory = session.checkInventory()
-    eggs = inventory.eggs
-    incubators = session.getInventory().incubators
-    for incubator in incubators:
-        if getattr(incubator, "pokemon_id", None) != None:
-            for egg in eggs:
-                if getattr(egg, "egg_incubator_id", None) == None:
-                    logging.info(session.setEgg(incubator, egg))
+    inventory = session.getInventory()
+    for incubator in inventory.incubators:
+        #if getattr(incubator, "item_id", None) == 'ITEM_INCUBATOR_BASIC_UNLIMITED':
+        #if getattr(incubator, "pokemon_id", None) == None:
+        for egg in inventory.eggs:
+            result = session.setEgg(incubator, egg)
+            logging.info(result)
+            if result != 'ERROR_INCUBATOR_ALREADY_IN_USE':
+                break
+                #logging.info(session.setEgg(incubator, egg))
+            #if getattr(egg, "egg_incubator_id", None) == None:
+            #    logging.info(session.setEgg(incubator, egg))
 
 # Basic bot
 def simpleBot(session):
