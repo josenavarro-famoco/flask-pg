@@ -174,6 +174,41 @@ def index():
     """Render website's home page."""
     return str(users)
 
+@app.route(BASE_PATH + "/login", methods=['POST'])
+def login_data():
+    if request.json:
+        mydata = request.json
+        username = mydata.get("username")
+        password = mydata.get("password")
+        auth = mydata.get("auth")
+        location = mydata.get("location")
+
+        if username == None or password == None or auth == None or location == None:
+            return jsonify(error="missing value"), 400
+
+        poko_session = PokeAuthSession(
+            username,
+            password,
+            auth,
+            geo_key=None
+        )
+
+        session = poko_session.authenticate(locationLookup=location)
+
+        if session:
+            global sessions
+            global users
+            sessions[username] = session
+            users.append(username)
+            logging.info(users)
+
+            return jsonify(data=str(session))
+        else:
+            return jsonify(error=str(session)), 400
+
+    else:
+        return jsonify(error="no values receives"), 400
+
 @app.route(BASE_PATH + "/login/<auth_type>/<user>/<password>/<location>")
 def login(auth_type, user, password, location):
     """
@@ -217,6 +252,14 @@ def login(auth_type, user, password, location):
         sessions[user] = session
         users.append(user)
         logging.info(users)
+
+        #access_token = getattr(session, "access_token", None)
+        #endpoint = getattr(session, "Endpoint", None)
+        #location = getattr(session, "Location", None)
+        #if access_token != None and endpoint != None and location != None:
+        #    return jsonify(access_token=access_token, endpoint=endpoint, location=location)
+    #else:
+    #    return jsonify(session), 400
     return str(session)
 
 @app.route(API_PATH + "/<user>/profile")

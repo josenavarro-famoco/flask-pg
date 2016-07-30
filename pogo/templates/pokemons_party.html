@@ -1,9 +1,38 @@
 {% extends "base.html" %}
 
 {% block title %} - Party{% endblock %}
-
+['id','stamina_max','cp','cp_multiplier','individual_attack','individual_defense','individual_stamina']
 {% block main %}
+<div class="well well-sm">
+  Pokemons: {{ pokemons | length }}
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr>
+       <th>ID</th>
+       <th>Name</th>
+       <th>Stamina Max</th>
+       <th>CP</th>
+       <th>CP Multiplier</th>
+       <th>Attack</th>
+       <th>Defense</th>
+       <th>Stamina</th>
+       <th>Stamina Max</th>
+       <th>Free</th>
+    </tr>
+   </thead>
 {% for pokemon in pokemons %}
-  <li>{{ pokemon.pokemon_id }} - <a href="/{{ user }}/pokemons/party/{{ pokemon.id }}">{{ pokemon.name }}</a></li>
+  <tr>
+    <td>{{ pokemon.pokemon_id }}</td>
+    <td><a href="/{{ user }}/pokemons/party/{{ pokemon.id }}">{{ pokemon.name }}</a></td>
+    <td>{{ pokemon.cp }}</td>
+    <td>{{ pokemon.cp_multiplier }}</td>
+    <td>{{ pokemon.individual_attack }}</td>
+    <td>{{ pokemon.individual_defense }}</td>
+    <td>{{ pokemon.individual_stamina }}</td>
+    <td>{{ pokemon.stamina_max }}</td>
+    <td><a target="_blank" href="/api/1/{{ user }}/pokemons/party/{{ pokemon.id }}/free"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></a></td>
+  </tr>
 {% endfor %}	
 {% endblock %}
+</table>
