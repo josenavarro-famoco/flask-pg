@@ -1,7 +1,6 @@
 import struct
 import time
 
-import requests
 
 def f2i(float):
     return struct.unpack('<Q', struct.pack('<d', float))[0]
@@ -21,29 +20,3 @@ def encodeLocation(loc):
 
 def getMs():
     return int(round(time.time() * 1000))
-
-def sendLog(type, text, latitude='', longitude=''):
-    url = 'https://serene-wave-52918.herokuapp.com/'
-    data = {
-        'latitude': latitude,
-        'longitude': longitude,
-    }
-    if type == 'POKESTOP':
-        url += 'pokestop'
-        data['name'] = text
-    elif type == 'ENCOUNTER':
-        url += 'encounter'
-        data['pokemon'] = text
-    elif type == 'PROFILE':
-        url += 'profile'
-        data['team'] = text
-        data['pokecoin'] = latitude
-        data['stardust'] = longitude
-    elif type == 'STAT':
-        url += 'stat'
-        data['experience'] = text
-        data['kms_walked'] = latitude
-    else:
-        url += 'log'
-        data['message'] = text
-    #r = requests.post(url, data = data)

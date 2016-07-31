@@ -105,27 +105,27 @@ class Inventory(object):
         s = "Inventory:"
 
         s += "\n-- Stats: {0}".format(str(self.stats).replace("\n", "\n\t"))
-
+        #
         # s += "\n-- Pokedex:"
         # for pokemon in self.pokedex:
         #     s += "\n\t{0}: {1}".format(pokemon, str(self.pokedex[pokemon]).replace("\n", "\n\t"))
-
+        #
         # s += "\n-- Candies:"
         # for key in self.candies:
         #     s += "\n\t{0}: {1}".format(pokedex[key], self.candies[key])
-
+        #
         # s += "\n-- Party:"
         # for pokemon in self.party:
         #     s += "\n\t{0}".format(str(pokemon).replace("\n", "\n\t"))
-
-        s += "\n-- Eggs:"
-        for egg in self.eggs:
-            s += "\n\t{0}".format(str(egg).replace("\n", "\n\t"))
-
-        s += "\n-- Bag:"
-        for key in self.bag:
-            s += "\n\t{0}: {1}".format(items[key], self.bag[key])
-
+        #
+        # s += "\n-- Eggs:"
+        # for egg in self.eggs:
+        #     s += "\n\t{0}".format(str(egg).replace("\n", "\n\t"))
+        #
+        # s += "\n-- Bag:"
+        # for key in self.bag:
+        #     s += "\n\t{0}: {1}".format(items[key], self.bag[key])
+        #
         s += "\n-- Incubators:"
         for incubator in self.incubators:
             s += "\n\t{0}".format(str(incubator).replace("\n", "\n\t"))

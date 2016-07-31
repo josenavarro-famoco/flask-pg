@@ -6,6 +6,9 @@ from custom_exceptions import GeneralPogoException
 from api import PokeAuthSession
 from location import Location
 
+import time
+import sys
+
 from pokedex import pokedex
 from inventory import items
 
@@ -26,6 +29,70 @@ def setupLogger():
     formatter = logging.Formatter('Line %(lineno)d,%(filename)s - %(asctime)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+
+def encounterAndCatch(session, pokemon, thresholdP=0.5, limit=5, delay=2):
+    # Start encounter
+    encounter = session.encounterPokemon(pokemon)
+
+    # Grab needed data from proto
+    chances = encounter.capture_probability.capture_probability
+    balls = encounter.capture_probability.pokeball_type
+    bag = session.checkInventory().bag
+
+    # Have we used a razz berry yet?
+    berried = False
+
+    # Make sure we aren't oer limit
+    count = 0
+
+    # Attempt catch
+    while True:
+        bestBall = 2
+        RAZZ_BERRY = 701
+
+        # Check for balls and see if we pass
+        # wanted threshold
+        for i in range(len(balls)):
+            if balls[i] in bag and bag[balls[i]] > 0:
+                if chances[i] > thresholdP:
+                    bestBall = balls[i]
+                    break
+
+        if not berried and RAZZ_BERRY in bag and bag[RAZZ_BERRY]:
+            logging.info("Using a RAZZ_BERRY")
+            session.useItemCapture(RAZZ_BERRY, pokemon)
+            berried = True
+            time.sleep(delay)
+            continue
+
+        # Try to catch it!!
+        logging.info("Using a %s" % items[bestBall])
+        attempt = session.catchPokemon(pokemon, bestBall)
+        time.sleep(delay)
+
+        # Success or run away
+        if attempt.status == 1:
+            return attempt
+
+        # CATCH_FLEE is bad news
+        if attempt.status == 3:
+            logging.info("Possible soft ban.")
+            return attempt
+
+        # Only try up to x attempts
+        count += 1
+        if count >= limit:
+            logging.info("Over catch limit")
+            return None
+
+
+# Catch a pokemon at a given point
+def walkAndCatch(session, pokemon):
+    if pokemon:
+        logging.info("Catching %s:" % pokedex[pokemon.pokemon_data.pokemon_id])
+        session.walkTo(pokemon.latitude, pokemon.longitude, step=2.8)
+        enc = encounterAndCatch(session, pokemon)
+        logging.info(enc)
 
 def parseResponseResult(result, operation=''):
     """
@@ -103,6 +170,34 @@ def parsePartyPokemon(pokemon, detail=False):
         pok[value] = getattr(pokemon, value, None)
 
     return pok
+
+def parseEggs(egg):
+    """
+    egg free:
+    id: 4555645718830338274
+    is_egg: true
+    egg_km_walked_target: 5.0
+    captured_cell_id: 5171192829494427648
+    creation_time_ms: 1469698248933
+
+    egg ocup:
+    id: 4555645718830338274
+    is_egg: true
+    egg_km_walked_target: 5.0
+    captured_cell_id: 5171192829494427648
+    egg_incubator_id: "EggIncubatorProto4824214944684084552"
+    creation_time_ms: 1469698248933
+    """
+    parsed_egg = {}
+
+    parsed_egg['id'] = getattr(egg, "id", None)
+    parsed_egg['egg_km_walked_target'] = getattr(egg, "egg_km_walked_target", None)
+    parsed_egg['captured_cell_id'] = getattr(egg, "captured_cell_id", None)
+    parsed_egg['is_egg'] = getattr(egg, "is_egg", None)
+    parsed_egg['egg_incubator_id'] = getattr(egg, "egg_incubator_id", None)
+    parsed_egg['creation_time_ms'] = getattr(egg, "creation_time_ms", None)
+
+    return parsed_egg
 
 def parseProfile(profile):
     """
@@ -262,7 +357,7 @@ def login(auth_type, user, password, location):
     #    return jsonify(session), 400
     return str(session)
 
-@app.route(API_PATH + "/<user>/profile")
+@app.route(BASE_PATH + "/<user>/profile")
 def profile(user):
     profile = parseProfile(sessions[user].getProfile())
     return render_template('profile.html', profile=profile)
@@ -270,21 +365,33 @@ def profile(user):
 
 @app.route(API_PATH + "/<user>/profile")
 def api_profile(user):
-    return jsonify({ 'data': parseProfile(sessions[user].getProfile()) })
+    return jsonify(data=parseProfile(sessions[user].getProfile()))
 
 @app.route(API_PATH + "/<user>/items")
 def items(user):
-    return str(sessions[user].getInventory())
+    return jsonify(data=sessions[user].getInventory())
 
 @app.route(API_PATH + "/<user>/items/candy")
 def items_candy(user):
-    return str(sessions[user].getInventory().getCandies())
+    return jsonify(candies=sessions[user].getInventory().candies)
+
+@app.route(BASE_PATH + "/<user>/items/eggs")
+def api_eggs(user):
+    eggs = sessions[user].getInventory().eggs
+    list_eggs = []
+    for egg in eggs:
+        list_eggs.append(parseEggs(egg))
+    return render_template('items_eggs.html', eggs=list_eggs)
 
 @app.route(API_PATH + "/<user>/items/eggs")
 def eggs(user):
-    return str(sessions[user].getInventory().getEggs())
+    eggs = sessions[user].getInventory().eggs
+    list_eggs = []
+    for egg in eggs:
+        list_eggs.append(parseEggs(egg))
+    return jsonify(eggs=list_eggs)
 
-@app.route(API_PATH + "/<user>/pokemons/nearby")
+@app.route(BASE_PATH + "/<user>/pokemons/nearby")
 def pokemons_nearby(user):
     cells = sessions[user].getMapObjects()
     latitude, longitude, _ = sessions[user].getCoordinates()
@@ -294,7 +401,21 @@ def pokemons_nearby(user):
         pokemons = [p for p in cell.wild_pokemons] + [p for p in cell.catchable_pokemons]
         for pokemon in pokemons:
             list_pokemons.append(parseWildPokemon(pokemon))
-    return jsonify({ 'data': list_pokemons, 'count': len(list_pokemons)})
+
+    return render_template('pokemons_nearby.html', user=user, pokemons=list_pokemons)
+
+@app.route(API_PATH + "/<user>/pokemons/nearby")
+def api_pokemons_nearby(user):
+    cells = sessions[user].getMapObjects()
+    latitude, longitude, _ = sessions[user].getCoordinates()
+    logging.info("Current pos: %f, %f" % (latitude, longitude))
+    list_pokemons = []
+    for cell in cells.map_cells:
+        pokemons = [p for p in cell.wild_pokemons]
+        for pokemon in pokemons:
+            list_pokemons.append(parseWildPokemon(pokemon))
+    return jsonify(data=list_pokemons, count=len(list_pokemons))
+
 
 @app.route(API_PATH + "/<user>/pokemons/nearby/<index_pokemon>")
 def pokemons_nearby_detail(user, index_pokemon):
@@ -317,11 +438,39 @@ def pokemons_nearby_detail(user, index_pokemon):
     logging.info("Current pos: %f, %f" % (latitude, longitude))
     list_pokemons = []
     for cell in cells.map_cells:
-        pokemons = [p for p in cell.wild_pokemons] + [p for p in cell.catchable_pokemons]
+        pokemons = [p for p in cell.wild_pokemons]
         for pokemon in pokemons:
             list_pokemons.append(pokemon)
-    
-    return jsonify({ 'data': parseWildPokemon(list_pokemons[index]) })
+
+    return jsonify(data=parseWildPokemon(list_pokemons[index]))
+
+@app.route(API_PATH + "/<user>/pokemons/nearby/<index_pokemon>/capture")
+def pokemons_nearby_detail_capture(user, index_pokemon):
+    """
+    encounter_id: 7755420385361159741
+    last_modified_timestamp_ms: 1469694984766
+    latitude: 50.8503661336
+    longitude: 4.35151228998
+    spawn_point_id: "47c3c387213"
+    pokemon_data {
+      pokemon_id: ZUBAT
+    }
+    time_till_hidden_ms: 148718
+
+    """
+    index = int(index_pokemon) - 1
+
+    cells = sessions[user].getMapObjects()
+    latitude, longitude, _ = sessions[user].getCoordinates()
+    logging.info("Current pos: %f, %f" % (latitude, longitude))
+    list_pokemons = []
+    for cell in cells.map_cells:
+        pokemons = [p for p in cell.wild_pokemons]
+        for pokemon in pokemons:
+            list_pokemons.append(pokemon)
+
+    result_capture = walkAndCatch(sessions[user], list_pokemons[index])
+    return jsonify(result=str(result_capture))
 
 @app.route(BASE_PATH + "/<user>/pokemons/party")
 def pokemon_party(user):

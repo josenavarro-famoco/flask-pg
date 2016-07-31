@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %} - Eggs{% endblock %}
+['id','stamina_max','cp','cp_multiplier','individual_attack','individual_defense','individual_stamina']
+{% block main %}
+<div class="well well-sm">
+  Eggs: {{ eggs | length }}
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr>
+       <th>ID</th>
+       <th>Kms</th>
+       <th>Captured</th>
+       <th>Incubating</th>
+    </tr>
+   </thead>
+{% for egg in eggs %}
+  <tr>
+    <td>{{ egg.id }}</td>
+    <td>{{ egg.egg_km_walked_target }}</td>
+    <td>{{ egg.creation_time_ms }}</td>
+    <td>{% if egg.egg_incubator_id == "" %}NO{% else %}YES{%endif %}</td>
+  </tr>
+{% endfor %}	
+{% endblock %}
+</table>

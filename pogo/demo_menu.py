@@ -7,16 +7,11 @@ import requests
 from custom_exceptions import GeneralPogoException
 
 from api import PokeAuthSession
+from session import PogoSession
 from location import Location
 
 from pokedex import pokedex
 from inventory import items
-
-from flask import Flask
-app = Flask(__name__)
-
-username = ''
-sessions = {}
 
 def sendLog(type, text, latitude='', longitude=''):
     url = 'https://serene-wave-52918.herokuapp.com/'
@@ -42,8 +37,8 @@ def sendLog(type, text, latitude='', longitude=''):
     else:
         url += 'log'
         data['message'] = text
-    r = requests.post(url, data = data)
-    logging.info(r.text)
+    # r = requests.post(url, data = data)
+    # logging.info(r.text)
 
 def setupLogger():
     logger = logging.getLogger()
@@ -439,81 +434,32 @@ def manual(session):
         elif option == 3:
             release_pokemon(session)
         elif option == 4:
-            fort = findClosestFort(session)
-            walkAndSpin(session, fort)
+            suboption = 0
+            forts = sortCloseForts(session)
+            while suboption > -1:
+                i = 0
+                for fort in forts:
+                    print ( "[" + str(i) + "]" + str(fort))
+                    i = i + 1
+                print('[ -1 ]: Back')
+                suboption = input("Walk to fort? ")
+                if suboption != -1:
+                    print walkAndSpin(session, forts[suboption])
+                    forts.remove(fort)
 
-@app.route("/")
-def index():
-    return "Hello "+ username + "!"
-
-@app.route("/profile")
-def profile():
-    return getProfile(session)
-
-@app.route("/items")
-def items():
-    return "Hello "+ username + "!"
-
-@app.route("/pokemons/nearby")
-def pokemons_nearby():
-    return "Hello "+ username + "!"
 # Entry point
 # Start off authentication and demo
 if __name__ == '__main__':
     setupLogger()
     logging.debug('Logger set up')
 
-    # Read in args
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--auth", help="Auth Service", required=True)
-    parser.add_argument("-u", "--username", help="Username", required=True)
-    parser.add_argument("-p", "--password", help="Password", required=True)
-    parser.add_argument("-l", "--location", help="Location")
-    parser.add_argument("-g", "--geo_key", help="GEO API Secret")
-    args = parser.parse_args()
+    token = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjM5NGNiYjk4OTdmOGZiMmYzMzY0NTMzMmEyMTU0MDk5YTk1ZTI1OWYifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXVkIjoiODQ4MjMyNTExMjQwLTdzbzQyMWpvdHIyNjA5cm1xYWtjZXV1MWx1dXEwcHRiLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTExNjc4NjkwMjc5NTg4MzQ5MTIxIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF6cCI6Ijg0ODIzMjUxMTI0MC0zdmRydHJmZG50bGpmMnU0bWxndG5ubGhuaWduMzVkNS5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsImVtYWlsIjoiam04bmF2QGdtYWlsLmNvbSIsImlhdCI6MTQ2OTkxNzkxNiwiZXhwIjoxNDY5OTIxNTE2LCJuYW1lIjoiSm9zZSBNaWd1ZWwgTmF2YXJybyBJZ2xlc2lhcyIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vLVh1Zzk3b2F2TXljL0FBQUFBQUFBQUFJL0FBQUFBQUFBVThZL2lkc0VneDBkU0tFL3M5Ni1jL3Bob3RvLmpwZyIsImdpdmVuX25hbWUiOiJKb3NlIE1pZ3VlbCIsImZhbWlseV9uYW1lIjoiTmF2YXJybyBJZ2xlc2lhcyJ9.d1W12odZnEScMvDGD643P9uIQ3IuycMmZFDwHKm1I8ILKYgz2bKUro_D47qer3muZajTXuehJ32Hjel3MPbb5H_DoOyO1AkzROHy6_EdxxBR_uM5jkMWUtFc1FRguZ8T47sFMR0-1ckCdP6S3ymvBiMkMA8rXj5QHljcT8tsMEf2HQ5iABYUYZ-gpmBwGEebTwzsBQQaN_m9JXe1nWoQcsC33unaLVOHUekRF7p3q8HyX-TDwPaDeMmgrEJR5dEFQjjthNyaJOo1AbkW-5guFrYvHAkdrwS8eHJS_LxZh0z902SRQR-cA8WBZRxkkZA0EvqGITniich12xG6ABVRGA'
+    location = Location('Brussels', None)
+    req_session = PokeAuthSession.createRequestsSession()
+    session = PogoSession(req_session, 'google', token, location)
 
-    # Check service
-    if args.auth not in ['ptc', 'google']:
-        logging.error('Invalid auth service {}'.format(args.auth))
-        sys.exit(-1)
-
-    # Create PokoAuthObject
-    poko_session = PokeAuthSession(
-        args.username,
-        args.password,
-        args.auth,
-        geo_key=args.geo_key
-    )
-
-    # Authenticate with a given location
-    # Location is not inherent in authentication
-    # But is important to session
-    if args.location:
-        session = poko_session.authenticate(locationLookup=args.location)
-    else:
-        session = poko_session.authenticate()
-
-    # Time to show off what we can do
     if session:
-        username = args.username
-        sessions[username] = session
-        # General
-        # getProfile(session)
-        # getInventory(session)
-
-        # Things we need GPS for
-        if args.location:
-            # Pokemon related
-            # pokemon = findBestPokemon(session)
-            # walkAndCatch(session, pokemon)
-            #
-            # # Pokestop related
-            # fort = findClosestFort(session)
-            # walkAndSpin(session, fort)
-
-        # see simpleBot() for logical usecases
-        #     simpleBot(session)
-        #     manual(sessions[args.username])
-            app.run()
+        manual(session)
     else:
         logging.critical('Session not created successfully')
+        sys.exit(-1)

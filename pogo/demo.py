@@ -271,13 +271,13 @@ def simpleBot(session):
         try:
             logging.info( '----------------------------------------- FORTS: ' + str(len(forts)))
             for fort in forts:
-                pokemons = findBestPokemon(session)
-                #if len(pokemons) > 0:
-                #    walkAndCatch(session, pokemons[0])
-                while len(pokemons) > 0:
-                    walkAndCatch(session, pokemons[0])
-                    time.sleep(1)
-                    pokemons = findBestPokemon(session)
+                # pokemons = findBestPokemon(session)
+                # #if len(pokemons) > 0:
+                # #    walkAndCatch(session, pokemons[0])
+                # while len(pokemons) > 0:
+                #     walkAndCatch(session, pokemons[0])
+                #     time.sleep(1)
+                #     pokemons = findBestPokemon(session)
                 walkAndSpin(session, fort)
                 cooldown = 1
                 time.sleep(2)

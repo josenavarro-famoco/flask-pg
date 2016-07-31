@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %} - Party{% endblock %}
+['id','stamina_max','cp','cp_multiplier','individual_attack','individual_defense','individual_stamina']
+{% block main %}
+<div class="well well-sm">
+  Pokemons: {{ pokemons | length }}
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr>
+       <th>ID</th>
+       <th>Name</th>
+       <th>Rarity</th>
+       <th>Capture</th>
+    </tr>
+   </thead>
+{% for pokemon in pokemons %}
+  <tr>
+    <td>{{ pokemon.pokemon_id }}</td>
+    <td><a href="/{{ user }}/pokemons/nearby/{{ pokemon[loop.index0] }}">{{ pokemon.name }}</a></td>
+    <td>{{ pokemon.rarity }}</td>
+    <td><a target="_blank" href="/api/1/{{ user }}/pokemons/nearby/{{ loop.index0 }}/capture">GO</a></td>
+  </tr>
+{% endfor %}	
+{% endblock %}
+</table>
